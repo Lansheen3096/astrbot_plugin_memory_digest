@@ -8,7 +8,7 @@ desc: |
   state 每轮全量注入；preference 和 event 走检索 + 闸门，event 还按时间递减。
 
   **写入闸门**：时间锚硬校验 + 关键词黑名单 + 余弦去重 + 来源校验。
-  新条目默认是待审状态，复核工具在仓库的 `tools/` 里。
+  新条目默认是待审状态，在插件页「Embedding 控制台 → 记忆审批」复核（需已装 recall）。
 
   **Embedding**：在插件配置页选择「跟随知识库 / 云端 API / 本机服务」。
   保存后 AstrBot 热重载插件，由插件创建/更新 `memory_layer_embedding` 并绑定知识库；
@@ -17,7 +17,7 @@ desc: |
   **和 recall 的关系**：写入侧负责记什么，注入侧负责什么时候拿出来。
   两个插件的 `kb_name` 配置必须一致，少装一个链路就不完整。
 author: Lansheen3096
-version: 0.2.1
+version: 0.2.2
 repo: https://github.com/Lansheen3096/astrbot_plugin_memory_digest
 astrbot_version: ">=4.28.2"
 views:
