@@ -2,7 +2,7 @@
 
 **长期记忆（写入侧）**：把对话提炼成 bot 的第一人称记忆，写进 AstrBot 知识库。
 
-版本 `0.2.2` · AstrBot `>= 4.28.2` · 需要 [astrbot_plugin_memory_recall](https://github.com/Lansheen3096/astrbot_plugin_memory_recall) 配合
+版本 `0.2.3` · AstrBot `>= 4.28.2` · 需要 [astrbot_plugin_memory_recall](https://github.com/Lansheen3096/astrbot_plugin_memory_recall) 配合
 
 ---
 
@@ -147,7 +147,7 @@ API Key 标了 `secret: true`，配置页遮罩显示；控制台只返回 `api_
 
 `127.0.0.1` 在 AstrBot 容器里指的是**容器自己**，不是宿主机。本机 embedding 服务跑在宿主机上时，
 填 `host.docker.internal`；Docker 不支持这个名字就用 `ip route` 查网桥地址
-（Linux 上通常是 `172.17.0.1` 或自定义网桥网关）。
+（Linux 上就是 Docker 默认网桥的网关地址，或你自己创建的网络网关）。
 
 ### 权限边界
 

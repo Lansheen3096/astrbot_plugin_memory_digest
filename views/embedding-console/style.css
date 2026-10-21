@@ -661,6 +661,34 @@ button:disabled {
   gap: 10px;
 }
 
+/* 页内二次确认：iframe 带 sandbox 时 window.confirm 会被浏览器忽略，只能自己画 */
+.review-confirm {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--danger, #c0392b);
+  border-radius: 10px;
+  background: var(--danger-soft, rgba(192, 57, 43, 0.08));
+}
+
+.review-confirm .hint {
+  margin-right: auto;
+  color: var(--danger, #c0392b);
+}
+
+button.danger {
+  border-color: var(--danger, #c0392b);
+  background: var(--danger, #c0392b);
+  color: #fff;
+}
+
+button.danger:hover {
+  filter: brightness(1.05);
+}
+
 #rv-selection {
   margin-right: auto;
 }

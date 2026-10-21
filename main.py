@@ -63,9 +63,9 @@ KB_ROOT = Path(get_astrbot_knowledge_base_path())
 PLUGIN_DATA_DIR = Path(get_astrbot_plugin_data_path()) / PLUGIN_NAME
 STATE_PATH = PLUGIN_DATA_DIR / "state.json"
 LEGACY_STATE_PATH = DATA_DIR / "memory_digest_state.json"
-# 可选兜底：marija_life 会记录每个会话的最后发言时间，存在就借来判活跃；
-# 不存在（别人的部署）就只看本插件收到的事件。
-LIFE_STATE = DATA_DIR / "marija_life_state.json"
+# 可选兜底：同目录下若有 *_life_state.json（记录每个会话最后发言时间），借它判活跃；
+# 没有就只看本插件自己收到的事件。
+LIFE_STATE = DATA_DIR / "life_state.json"
 KB_NAME = "长期记忆"  # ★ 必须和 astrbot_plugin_memory_recall 里的一致
 
 # 配置页保存后会热重载插件，加载时按这组设置创建/更新 provider 并绑定知识库。
@@ -422,11 +422,22 @@ class Main(star.Star):
         self._last_msg[event.unified_msg_origin] = time.time()
 
     def _life_state(self) -> dict:
+        """读活跃度兜底文件：先认标准名，再认同目录下任何 *_life_state.json。"""
+        candidates = [LIFE_STATE]
         try:
-            d = json.loads(LIFE_STATE.read_text(encoding="utf-8"))
+            candidates += sorted(DATA_DIR.glob("*_life_state.json"))
+        except OSError:
+            pass
+        for path in candidates:
+            try:
+                d = json.loads(path.read_text(encoding="utf-8"))
+            except FileNotFoundError:
+                continue
+            except Exception as exc:  # noqa: BLE001
+                logger.warning("[记忆] 活跃度文件读不了（%s）：%s", path.name, exc)
+                return {}
             return d if isinstance(d, dict) else {}
-        except Exception:
-            return {}
+        return {}
 
     def _last_activity(self) -> float:
         if self._last_msg:

@@ -7,6 +7,7 @@ const state = {
   busy: false,
   theme: "light",
   manualTheme: false,
+  tab: "status",
 };
 
 function t(key, fallback, vars) {
@@ -308,6 +309,7 @@ const review = {
   picks: new Map(),
   busy: false,
   installed: false,
+  pendingPlan: null,
 };
 
 function escapeHtml(value) {
@@ -416,7 +418,7 @@ async function loadReview(showLog = false) {
   }
   $("rv-disabled-card").hidden = true;
   try {
-    const data = await bridge.apiGet("review/list");
+    const data = await bridge.apiGet("review/list", { _: Date.now() });
     review.rows = Array.isArray(data.rows) ? data.rows : [];
     renderReviewCounts(data.counts || {});
     renderReview();
@@ -472,37 +474,79 @@ function bindReviewEvents() {
     for (const [sid, op] of review.picks) {
       plan[op].push(sid);
     }
-    if (
-      plan.delete.length &&
-      !confirm(`本次包含 ${plan.delete.length} 条删除，不可撤销，确认应用？`)
-    ) {
+    if (plan.delete.length) {
+      // 页面跑在 sandbox 的 iframe 里，window.confirm 会被浏览器忽略。
+      // 只能用页内确认条：先挂起计划，等第二次点击。
+      review.pendingPlan = plan;
+      showConfirmBar(plan.delete.length);
       return;
     }
-    review.busy = true;
-    renderReviewSelection();
-    try {
-      const result = await bridge.apiPost("review/apply", { plan });
-      log(result.message || "已应用。");
-      review.picks.clear();
-      await loadReview();
-      try {
-        await loadStatus();
-      } catch (_error) {
-        /* 状态刷新失败不影响审批结果 */
-      }
-    } catch (error) {
-      log(`应用失败：${error?.message || error}`);
-    } finally {
-      review.busy = false;
-      renderReviewSelection();
+    await submitReview(plan);
+  });
+
+  $("rv-confirm-yes").addEventListener("click", async () => {
+    const plan = review.pendingPlan;
+    review.pendingPlan = null;
+    hideConfirmBar();
+    if (plan) {
+      await submitReview(plan);
     }
   });
+
+  $("rv-confirm-no").addEventListener("click", () => {
+    review.pendingPlan = null;
+    hideConfirmBar();
+    log("已取消，没有删除任何条目。");
+  });
+}
+
+function showConfirmBar(count) {
+  $("rv-confirm-text").textContent = `本次包含 ${count} 条删除，不可撤销。`;
+  $("rv-confirm").hidden = false;
+  $("rv-apply").disabled = true;
+}
+
+function hideConfirmBar() {
+  $("rv-confirm").hidden = true;
+  renderReviewSelection();
+}
+
+async function submitReview(plan) {
+  review.busy = true;
+  renderReviewSelection();
+  try {
+    const result = await bridge.apiPost("review/apply", { plan });
+    const applied = result.applied || {};
+    const total = Object.values(applied).reduce((sum, n) => sum + (Number(n) || 0), 0);
+    log(result.message || "已应用。");
+    if (!total) {
+      const unknown = (result.unknown || []).join(", ");
+      log(
+        unknown
+          ? `没有任何条目被修改：这些编号库里找不到（${unknown}）。`
+          : "没有任何条目被修改，刷新列表确认状态。",
+      );
+    }
+    review.picks.clear();
+    await loadReview();
+    try {
+      await loadStatus();
+    } catch (_error) {
+      /* 状态刷新失败不影响审批结果 */
+    }
+  } catch (error) {
+    log(`应用失败：${error?.message || error}`);
+  } finally {
+    review.busy = false;
+    renderReviewSelection();
+  }
 }
 
 function bindTabs() {
   document.querySelectorAll(".view-tab").forEach((button) => {
     button.addEventListener("click", () => {
       const name = button.dataset.tab;
+      state.tab = name;
       document
         .querySelectorAll(".view-tab")
         .forEach((el) => el.classList.toggle("is-active", el === button));
@@ -568,6 +612,9 @@ async function main() {
     }
     try {
       await loadStatus(true);
+      if (state.tab === "review") {
+        await loadReview(true);
+      }
     } catch (error) {
       log(
         t("error_prefix", "失败：{message}", {
