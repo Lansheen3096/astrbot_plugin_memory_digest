@@ -2,7 +2,7 @@
 
 **长期记忆（写入侧）**：把对话提炼成 bot 的第一人称记忆，写进 AstrBot 知识库。
 
-版本 `0.2.3` · AstrBot `>= 4.28.2` · 需要 [astrbot_plugin_memory_recall](https://github.com/Lansheen3096/astrbot_plugin_memory_recall) 配合
+版本 `0.2.4` · AstrBot `>= 4.28.2` · 需要 [astrbot_plugin_memory_recall](https://github.com/Lansheen3096/astrbot_plugin_memory_recall) 配合
 
 ---
 

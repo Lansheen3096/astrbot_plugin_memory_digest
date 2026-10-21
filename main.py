@@ -2009,6 +2009,8 @@ class Main(star.Star):
                 rows.append(
                     {
                         "doc_id": doc_id,
+                        # ★ 删除要用：doc_id 是「块」的 id，kb_doc_id 是它所属「文档」的 id
+                        "kb_doc_id": meta.get("kb_doc_id") or "",
                         "sid": meta.get("sid") or "?",
                         "text": text or "",
                         "kind": meta.get("kind") or "event",
@@ -2113,9 +2115,15 @@ class Main(star.Star):
                 finally:
                     con.close()
 
-            # 删除必须走框架 API，三处（documents / FTS / faiss）一起清
+            # 删除必须走框架 API，三处（documents / FTS / faiss）一起清。
+            # 列表是「分块」级：doc_id 是块，kb_doc_id 才是上传时那个文档；
+            # 传错层级会静默匹配不到任何东西（删除没反应、也不报错）。
             for row in todo["delete"]:
-                await kb.delete_document(row["doc_id"])
+                parent = row.get("kb_doc_id") or ""
+                if parent and hasattr(kb, "delete_chunk"):
+                    await kb.delete_chunk(row["doc_id"], parent)
+                else:
+                    await kb.delete_document(row["doc_id"])
 
             results = {
                 "keep": len(todo["keep"]),
